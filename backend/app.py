@@ -9,7 +9,6 @@ import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-import pdfplumber
 from PIL import Image
 import pytesseract
 from dotenv import load_dotenv
@@ -143,37 +142,38 @@ def clean_extracted_text(text):
 
 
 def extract_text_from_pdf(file_path):
-    """Extract text from PDF using pdfplumber (memory-optimized for free tier)"""
+    """Extract text from PDF using PyPDF2 (memory-efficient for free tier)"""
     import gc
+    from PyPDF2 import PdfReader
+    
     print(f"\n📄 [PDF EXTRACTION] Starting extraction from: {file_path}")
     text_parts = []
-    MAX_PAGES = 15  # Limit pages to avoid memory issues on free tier
+    MAX_PAGES = 10  # Limit pages for free tier
     
     try:
-        with pdfplumber.open(file_path) as pdf:
-            total_pages = len(pdf.pages)
-            pages_to_process = min(total_pages, MAX_PAGES)
-            print(f"📄 [PDF EXTRACTION] Found {total_pages} pages, processing first {pages_to_process}")
-            
-            for i in range(pages_to_process):
-                try:
-                    page = pdf.pages[i]
-                    page_text = page.extract_text()
-                    if page_text:
-                        text_parts.append(page_text)
-                        print(f"📄 [PDF EXTRACTION] Page {i+1}: Extracted {len(page_text)} characters")
-                    else:
-                        print(f"📄 [PDF EXTRACTION] Page {i+1}: No text found")
-                    # Force garbage collection after each page to free memory
-                    del page
-                    gc.collect()
-                except Exception as page_error:
-                    print(f"📄 [PDF EXTRACTION] Page {i+1}: Error - {page_error}")
-                    continue
-                    
-            if total_pages > MAX_PAGES:
-                print(f"⚠️ [PDF EXTRACTION] Skipped {total_pages - MAX_PAGES} pages to save memory")
+        reader = PdfReader(file_path)
+        total_pages = len(reader.pages)
+        pages_to_process = min(total_pages, MAX_PAGES)
+        print(f"📄 [PDF EXTRACTION] Found {total_pages} pages, processing first {pages_to_process}")
+        
+        for i in range(pages_to_process):
+            try:
+                page = reader.pages[i]
+                page_text = page.extract_text()
+                if page_text:
+                    text_parts.append(page_text)
+                    print(f"📄 [PDF EXTRACTION] Page {i+1}: Extracted {len(page_text)} characters")
+                else:
+                    print(f"📄 [PDF EXTRACTION] Page {i+1}: No text found")
+                # Force garbage collection
+                gc.collect()
+            except Exception as page_error:
+                print(f"📄 [PDF EXTRACTION] Page {i+1}: Error - {page_error}")
+                continue
                 
+        if total_pages > MAX_PAGES:
+            print(f"⚠️ [PDF EXTRACTION] Skipped {total_pages - MAX_PAGES} pages to save memory")
+            
     except Exception as e:
         print(f"❌ [PDF EXTRACTION] Error: {e}")
         raise Exception(f"Failed to extract text from PDF: {str(e)}")
