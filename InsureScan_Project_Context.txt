@@ -1,0 +1,433 @@
+================================================================================
+                    INSURESCAN - COMPLETE PROJECT CONTEXT
+                    AI-Powered Insurance Policy Analyzer
+================================================================================
+
+Use this document to understand the complete context of the InsureScan project
+before generating any presentations, documentation, or marketing material.
+
+================================================================================
+                           SECTION 1: THE PROBLEM
+================================================================================
+
+PROBLEM STATEMENT:
+Insurance policies in India are notoriously difficult to understand. The average
+health insurance policy document spans 40+ pages filled with complex legal
+jargon, hidden clauses, and fine print that most consumers never read or
+understand. This leads to:
+
+1. CLAIM REJECTIONS: Over ₹50,000 crore worth of claims are rejected annually
+   in India, often because policyholders didn't understand their coverage limits,
+   waiting periods, or exclusions.
+
+2. HIDDEN "GOTCHAS": Policies contain dangerous clauses like:
+   - Room rent capping (e.g., "1% of sum insured per day" which can trigger
+     proportionate deduction on ALL expenses)
+   - Pre-existing disease waiting periods (2-4 years)
+   - Co-payment clauses (10-20% out of pocket for seniors)
+   - Sub-limits on specific treatments (cataract, knee replacement)
+   - Exclusions (dental, mental health, maternity often not covered)
+
+3. INFORMATION ASYMMETRY: Insurance companies have expert lawyers drafting
+   policies while consumers have no easy way to decode them. This imbalance
+   leads to people paying for coverage they won't receive.
+
+4. CLAIM-TIME DISCOVERY: Most people only discover their policy limitations
+   when they're in a hospital trying to file a claim - the worst possible time.
+
+TARGET USERS:
+- First-time insurance buyers (Millennials, Gen-Z entering workforce)
+- Families reviewing or renewing policies
+- Senior citizens comparing Medicare/health policies
+- Insurance agents wanting quick policy summaries for clients
+- Consumer advocacy groups and financial advisors
+
+================================================================================
+                           SECTION 2: OUR SOLUTION
+================================================================================
+
+SOLUTION OVERVIEW:
+InsureScan is an AI-powered web application that analyzes insurance policy
+documents and generates a "Smart Policy Report" in plain, simple language.
+Users upload their policy (PDF or image), and within seconds, they receive:
+
+1. SAFETY SCORE (0-100): A single number indicating how consumer-friendly
+   the policy is. Higher = better protection.
+
+2. RED FLAGS: A list of concerning clauses with severity ratings (HIGH/MEDIUM/LOW)
+   and real-world impact explanations. Examples:
+   - "Room Rent Capped at ₹5,000/day" → HIGH severity
+     Impact: "If you choose a room costing ₹8,000/day, ALL your expenses
+     (surgery, medicines, tests) will be reduced proportionally by 37.5%"
+
+3. GOOD FEATURES: Positive aspects of the policy that benefit the consumer.
+   Examples: No Claim Bonus, Restoration Benefit, Free Health Checkup
+
+4. COVERAGE GAPS: What's NOT covered by the policy (Maternity, Dental, AYUSH)
+
+5. RECOMMENDATIONS: Actionable advice tailored to the policy analysis.
+
+6. JARGON DECODER: Translations of insurance terminology into plain language.
+   Example: "Proportionate Deduction" → "If room rent exceeds the limit, ALL
+   your expenses are reduced by the same percentage"
+
+VALUE PROPOSITION:
+"Upload your policy. Get instant clarity."
+We convert 40-page legal documents into 2-minute digestible reports.
+
+================================================================================
+                      SECTION 3: TECHNICAL ARCHITECTURE
+================================================================================
+
+HIGH-LEVEL ARCHITECTURE:
+
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   USER DEVICE   │────▶│  REACT FRONTEND │────▶│  FLASK BACKEND  │
+│  (Browser)      │     │  (localhost:3000)│     │  (localhost:5000)│
+└─────────────────┘     └─────────────────┘     └────────┬────────┘
+                                                         │
+                        ┌────────────────────────────────┼────────────────────────────────┐
+                        │                                │                                │
+                        ▼                                ▼                                ▼
+               ┌────────────────┐              ┌────────────────┐              ┌────────────────┐
+               │ TEXT EXTRACTION │              │   AI ANALYSIS  │              │  RESPONSE      │
+               │ - pdfplumber    │              │ - OpenRouter   │              │  FORMATTING    │
+               │ - Tesseract OCR │              │ - Google Gemini│              │ - JSON to UI   │
+               │ - Smart Extract │              │ - Bytez (Qwen) │              └────────────────┘
+               └────────────────┘              │ - Mock Fallback│
+                                               └────────────────┘
+
+TECHNOLOGY STACK:
+
+FRONTEND (React):
+- React 18 with functional components and hooks
+- Context API for global state (Theme management)
+- CSS Variables for dynamic theming (dark/light mode)
+- Axios for API communication
+- Component-based architecture:
+  * App.js - Main application shell, routing, state management
+  * Hero.js - Landing page with branding and "How It Works" section
+  * FileUpload.js - Drag-and-drop file upload interface
+  * LoadingState.js - Animated scanning visualization
+  * ResultsDashboard.js - Tabbed Smart Policy Report display
+  * ThemeContext.js - Dark/Light mode provider
+
+BACKEND (Flask/Python):
+- Flask web framework with CORS enabled
+- RESTful API design
+- Key endpoints:
+  * GET / - Health check
+  * POST /analyze - Main analysis endpoint (accepts file upload)
+  * GET /demo - Returns mock data for demonstrations
+
+- Document Processing:
+  * pdfplumber - PDF text extraction
+  * pytesseract - OCR for image-based documents
+  * Smart Section Extraction - Keyword-based important paragraph detection
+    for large documents (100,000+ characters)
+
+- AI Integration Layer:
+  * OpenRouter API (primary) - Multi-model fallback with 5 free models
+  * Google Gemini API (secondary fallback)
+  * Bytez API with Qwen3-4B (tertiary fallback)
+  * Mock data (final safety net)
+
+================================================================================
+                      SECTION 4: CODE WALKTHROUGH
+================================================================================
+
+BACKEND CODE STRUCTURE (app.py):
+
+1. CONFIGURATION (Lines 1-45):
+   - Environment variable loading
+   - API keys for OpenRouter, Google Gemini, Bytez
+   - File upload settings (16MB max, allowed extensions)
+   - Model configurations
+
+2. SYSTEM PROMPT (Lines 46-110):
+   The AI is instructed to act as "InsureScan AI" - an expert insurance analyst.
+   The prompt specifies:
+   - 10 types of RED FLAGS to detect (room rent, co-pay, waiting periods, etc.)
+   - 11 types of GOOD FEATURES to highlight (NCB, restoration, cashless, etc.)
+   - Exact JSON output structure required
+   - Focus on Indian insurance policies
+
+3. TEXT EXTRACTION FUNCTIONS (Lines 115-260):
+   - allowed_file() - Validates file extensions
+   - clean_extracted_text() - Removes duplicate characters from PDF artifacts
+   - extract_text_from_pdf() - Uses pdfplumber for PDF parsing
+   - extract_text_from_image() - Uses pytesseract OCR for images
+   - extract_important_sections() - Smart extraction for large documents
+     * Scores paragraphs by keyword relevance
+     * Extracts most important ~12,000 characters for AI analysis
+
+4. AI ANALYSIS FUNCTIONS (Lines 265-560):
+   
+   analyze_with_openrouter():
+   - Tries 5 free models in sequence:
+     1. google/gemini-2.0-flash-exp:free
+     2. meta-llama/llama-3.3-70b-instruct:free
+     3. deepseek/deepseek-r1:free
+     4. qwen/qwen3-14b:free
+     5. mistralai/mistral-small-3.1-24b-instruct:free
+   - Handles 429 (rate limit) by trying next model
+   - Handles 404 (model not found) by trying next model
+   - Parses JSON response, cleans markdown formatting
+
+   analyze_with_gemini():
+   - Uses Google's Generative AI REST API
+   - Model: gemini-2.0-flash-lite
+   - Handles response parsing and error logging
+
+   analyze_with_bytez():
+   - Uses Bytez API with Qwen3-4B model
+   - Parses nested JSON response structure
+   - Strips <think> reasoning tags from output
+   - Bearer token authentication
+
+   get_mock_analysis():
+   - Returns realistic mock data matching expected format
+   - Used when all AI providers fail
+   - Contains sample red flags, good features, recommendations
+
+   analyze_policy():
+   - Orchestrates the fallback chain:
+     OpenRouter → Gemini → Bytez → Mock
+   - Returns first successful result
+
+5. API ENDPOINTS (Lines 565-680):
+   
+   POST /analyze:
+   - Accepts multipart/form-data with 'file' field
+   - Handles demo_mode flag for presentations
+   - Saves file temporarily, extracts text, analyzes, returns JSON
+   - Cleans up temp files after processing
+
+FRONTEND CODE STRUCTURE:
+
+1. App.js:
+   - Main application container
+   - State management: file, isAnalyzing, analysisResult, error
+   - Navigation bar with logo, AI status indicator, theme toggle
+   - Conditional rendering: Hero → FileUpload → Loading → Results
+
+2. Hero.js:
+   - Landing page component
+   - "How It Works" 3-step guide with icons
+   - Feature pills: "PDF & Images", "AI-Powered", "Hindi Support"
+   - Trust indicators and call-to-action button
+
+3. FileUpload.js:
+   - Drag-and-drop zone with visual feedback
+   - File type validation
+   - "Quick Demo" button for presentations
+   - Sends POST request to /analyze endpoint
+
+4. LoadingState.js:
+   - Animated document scanning visualization
+   - Glowing scan line that moves up/down
+   - Loading messages cycle through stages
+
+5. ResultsDashboard.js:
+   - Tabbed interface with 5 tabs:
+     * Overview - Safety score, risk breakdown bars, summary
+     * Red Flags - Severity-tagged warnings with impact explanations
+     * Benefits - Good features with benefit descriptions
+     * Advice - Coverage gaps + recommendations
+     * Glossary - Jargon decoder terms
+   - Hindi translation toggle
+   - New Analysis button
+
+6. ThemeContext.js:
+   - React Context for global theme state
+   - localStorage persistence
+   - Toggles 'dark' class on document root
+
+7. index.css:
+   - CSS custom properties for theming
+   - Light/dark mode color palettes
+   - Component styles using CSS variables
+   - Animations (scan line, glow effects)
+
+================================================================================
+                    SECTION 5: KEY FEATURES IMPLEMENTED
+================================================================================
+
+✅ CORE FEATURES:
+1. PDF text extraction using pdfplumber
+2. Image OCR using Tesseract
+3. AI-powered policy analysis with structured JSON output
+4. Smart extraction for large documents (100K+ characters)
+5. Safety score calculation (0-100)
+6. Red flag detection with severity levels
+7. Good feature highlighting
+8. Coverage gap identification
+9. Actionable recommendations
+10. Insurance jargon decoder
+
+✅ USER EXPERIENCE:
+1. Clean, modern UI with intuitive flow
+2. Drag-and-drop file upload
+3. Real-time scanning animation during analysis
+4. Tabbed dashboard for organized information display
+5. Dark/Light mode toggle with system preference detection
+6. Hindi language support (UI translations)
+7. Mobile-responsive design
+8. Demo mode for presentations
+
+✅ RELIABILITY:
+1. Multi-tier AI fallback system (4 providers)
+2. Graceful error handling at every step
+3. Mock data fallback ensures app never breaks
+4. Detailed console logging for debugging
+
+✅ TECHNICAL:
+1. RESTful API design
+2. CORS enabled for cross-origin requests
+3. Secure file handling (temp files cleaned up)
+4. Environment variable configuration
+5. Modular, maintainable code structure
+
+================================================================================
+                    SECTION 6: CURRENT STATUS
+================================================================================
+
+PROJECT STATUS: MVP COMPLETE ✅
+
+WHAT'S WORKING:
+- Full end-to-end analysis pipeline
+- PDF and image upload and processing
+- AI analysis with fallback chain (OpenRouter → Gemini → Bytez → Mock)
+- Beautiful results dashboard with all 5 tabs
+- Dark/Light mode fully functional
+- Hindi translation toggle working
+- Demo mode for presentations
+- Scanning animation during loading
+
+TESTED WITH:
+- ICICI Lombard Complete Health Insurance (37-page PDF)
+- Various health insurance policy documents
+- Image uploads of policy pages
+
+AI MODELS USED:
+- OpenRouter: Gemini 2.0 Flash, LLaMA 3.3 70B, DeepSeek R1, Qwen3, Mistral
+- Google: Gemini 2.0 Flash Lite
+- Bytez: Qwen3-4B
+
+KNOWN LIMITATIONS:
+- Rate limiting on free AI tiers (handled by fallback)
+- OCR accuracy depends on image quality
+- Very long documents (50+ pages) may need better chunking
+- Hindi translations are UI-only (AI response is in English)
+
+================================================================================
+                    SECTION 7: SAMPLE OUTPUT FORMAT
+================================================================================
+
+The AI returns a JSON object with this structure:
+
+{
+  "policy_type": "health",
+  "insurer_name": "ICICI Lombard",
+  "sum_insured": "₹5,00,000",
+  "safety_score": 62,
+  "risk_level": "medium",
+  "summary": "A standard health insurance policy with decent coverage but has
+              concerning limitations on room rent, long waiting periods for
+              pre-existing diseases, and co-payment clauses.",
+  
+  "risk_breakdown": {
+    "room_rent_risk": 7,
+    "waiting_period_risk": 8,
+    "exclusions_risk": 5,
+    "sublimits_risk": 6,
+    "copay_risk": 7
+  },
+  
+  "red_flags": [
+    {
+      "issue": "Room Rent Capped at ₹5,000/day",
+      "severity": "high",
+      "impact": "If you choose a room costing ₹8,000/day, all your expenses
+                will be reduced proportionally by 37.5%"
+    },
+    {
+      "issue": "4-year waiting period for pre-existing diseases",
+      "severity": "high",
+      "impact": "Diabetes, BP, thyroid conditions won't be covered for 4 years"
+    }
+  ],
+  
+  "good_features": [
+    {
+      "feature": "No Claim Bonus (NCB) 10% yearly",
+      "benefit": "Sum insured increases by 10% each claim-free year, up to 50%"
+    },
+    {
+      "feature": "Free Annual Health Checkup",
+      "benefit": "Preventive health checkup worth ₹2,000 covered every year"
+    }
+  ],
+  
+  "coverage_gaps": [
+    "No maternity coverage",
+    "No dental treatment coverage",
+    "No mental health/psychiatric coverage"
+  ],
+  
+  "recommendations": [
+    "Consider a top-up plan to increase coverage",
+    "Check room rent limits before choosing hospital rooms",
+    "Keep medical records for pre-existing disease claims"
+  ],
+  
+  "jargon_decoded": [
+    {
+      "term": "Sum Insured",
+      "meaning": "Maximum amount the insurer will pay in a year"
+    },
+    {
+      "term": "Proportionate Deduction",
+      "meaning": "If room rent exceeds limit, ALL expenses reduced proportionally"
+    }
+  ]
+}
+
+================================================================================
+                         SECTION 8: FILE STRUCTURE
+================================================================================
+
+hacko/
+├── backend/
+│   ├── app.py              # Main Flask application (all backend logic)
+│   ├── uploads/            # Temporary file storage (auto-cleaned)
+│   ├── requirements.txt    # Python dependencies
+│   └── .env               # Environment variables (API keys)
+│
+├── frontend/
+│   ├── public/
+│   │   └── index.html     # HTML template
+│   ├── src/
+│   │   ├── App.js         # Main React component
+│   │   ├── index.js       # React entry point (with ThemeProvider)
+│   │   ├── index.css      # Global styles + CSS variables
+│   │   ├── context/
+│   │   │   └── ThemeContext.js  # Dark/Light mode context
+│   │   └── components/
+│   │       ├── Hero.js           # Landing page
+│   │       ├── FileUpload.js     # Upload interface
+│   │       ├── LoadingState.js   # Scanning animation
+│   │       └── ResultsDashboard.js # Analysis results UI
+│   └── package.json       # Node dependencies
+│
+└── InsureScan_PPT_Plan.txt    # Presentation slide plan
+
+================================================================================
+                              END OF CONTEXT
+================================================================================
+
+PROJECT NAME: InsureScan
+TAGLINE: "Decode, Compare & Understand Insurance in Seconds"
+CATEGORY: AI/ML, FinTech, Consumer Protection
+TECH STACK: React + Flask + Multiple AI APIs (OpenRouter, Gemini, Bytez)
+STATUS: MVP Complete, Ready for Demo
