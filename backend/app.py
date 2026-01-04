@@ -32,16 +32,15 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # OpenRouter API Configuration
-#OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', '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')
-OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', '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')
+OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', '')
 OPENROUTER_MODEL = "google/gemini-2.0-flash-exp:free"
 
 # Google Gemini API Configuration (fallback when OpenRouter is rate limited)
-GOOGLE_GEMINI_API_KEY = os.getenv('GOOGLE_API_KEY', 'AIzaSyDuOC119ebQsbSsl6pW9n9Kr0ns_1YU1lM')
-GOOGLE_GEMINI_MODEL = "gemini-2.0-flash-lite"  # Use standard gemini-pro model
+GOOGLE_GEMINI_API_KEY = os.getenv('GOOGLE_API_KEY', '')
+GOOGLE_GEMINI_MODEL = "gemini-2.0-flash-lite"
 
 # Bytez API Configuration (tertiary fallback)
-BYTEZ_API_KEY = os.getenv('BYTEZ_API_KEY', 'ae113d10858d8dba148d7186b5dbabc6').strip()
+BYTEZ_API_KEY = os.getenv('BYTEZ_API_KEY', '').strip()
 BYTEZ_MODEL = "Qwen/Qwen3-4B"
 
 
